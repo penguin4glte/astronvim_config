@@ -87,6 +87,13 @@ return {
           function() require("custom_functions.change_directory").change_directory() end,
           desc = "Change Directory via Snacks",
         },
+
+        ["gI"] = {
+          function ()
+            require("snacks").picker.lsp_implementations()
+          end,
+          desc = "go to implementation"
+        }
         -- tables with just a `desc` key will be registered with which-key if it's installed
         -- this is useful for naming menus
         -- ["<Leader>b"] = { desc = "Buffers" },
