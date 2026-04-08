@@ -47,7 +47,7 @@ function M.change_directory()
     table.insert(items, { text = name })
   end
 
-  Snacks.picker.pick {
+  require("snacks").picker.pick {
     title = "Select Directory",
     items = items,
     format = "text",
