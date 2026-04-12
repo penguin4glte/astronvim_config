@@ -1,0 +1,79 @@
+return {
+  "okuuva/auto-save.nvim",
+  event = { "User AstroFile", "InsertEnter" },
+  dependencies = {
+    "AstroNvim/astrocore",
+    opts = {
+      autocmds = {
+        autoformat_toggle = {
+          -- Disable autoformat before saving
+          {
+            event = "User",
+            desc = "Disable autoformat before saving",
+            pattern = "AutoSaveWritePre",
+            callback = function()
+              -- Save global autoformat status
+              vim.g.OLD_AUTOFORMAT = vim.g.autoformat
+              vim.g.autoformat = false
+
+              local old_autoformat_buffers = {}
+              -- Disable all manually enabled buffers
+              for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+                if vim.b[bufnr].autoformat then
+                  table.insert(old_autoformat_buffers, bufnr)
+                  vim.b[bufnr].autoformat = false
+                end
+              end
+
+              vim.g.OLD_AUTOFORMAT_BUFFERS = old_autoformat_buffers
+            end,
+          },
+          -- Re-enable autoformat after saving
+          {
+            event = "User",
+            desc = "Re-enable autoformat after saving",
+            pattern = "AutoSaveWritePost",
+            callback = function()
+              -- Restore global autoformat status
+              vim.g.autoformat = vim.g.OLD_AUTOFORMAT
+              -- Re-enable all manually enabled buffers
+              for _, bufnr in ipairs(vim.g.OLD_AUTOFORMAT_BUFFERS or {}) do
+                vim.b[bufnr].autoformat = true
+              end
+            end,
+          },
+        },
+      },
+    },
+  },
+  opts = {
+    condition = function(buf)
+      if vim.tbl_contains({
+        "Fyler",
+      }, vim.fn.getbufvar(buf, "&filetype")) then return false end
+
+      -- Exclude claudecode diff buffers by buffer name patterns
+      local bufname = vim.api.nvim_buf_get_name(buf)
+      if bufname:match('%(proposed%)') or bufname:match('%(NEW FILE %- proposed%)') or bufname:match('%(New%)') then
+        return false
+      end
+
+      -- Exclude by buffer variables (claude code sets these)
+      if
+        vim.b[buf].claudecode_diff_tab_name
+        or vim.b[buf].claude_code_diff_new_win
+        or vim.b[buf].claudecode_diff_target_win
+      then
+        return false
+      end
+
+      -- Exclude by buffer type (claude code diff buffers use "acwrite")
+      local buftype = vim.fn.getbufvar(buf, '&buftype')
+      if buftype == 'acwrite' then
+        return false
+      end
+
+      return true
+    end,
+  },
+}
